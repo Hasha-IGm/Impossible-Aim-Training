@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impossible Aim Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(45deg, #e74c3c, #c0392b, #9b59b6);
+            background-size: 400% 400%;
+            animation: gradientAnimation 10s ease infinite;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            color: white;
+            position: relative;
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Game Container */
+        .game-container {
+            position: relative;
+            width: 90%;
+            height: 80%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Scoreboard */
+        .score-board, .timer {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            top: 20px;
+            left: 20px;
+        }
+
+        .timer {
+            left: auto;
+            right: 20px;
+        }
+
+        /* Ball Style */
+        .target {
+            position: absolute;
+            background-color: #ff6347;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            transition: transform 0.3s ease-out;
+        }
+
+        /* Game Over Message */
+        .game-over {
+            position: absolute;
+            font-size: 40px;
+            font-weight: bold;
+            color: #e74c3c;
+            visibility: hidden;
+            transition: visibility 0.5s ease;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Button Style */
+        .reset-button {
+            position: absolute;
+            bottom: 20px;
+            padding: 12px 24px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .reset-button:hover {
+            background-color: #27ae60;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Game Container -->
+    <div class="game-container" id="gameContainer">
+        <!-- Scoreboard -->
+        <div class="score-board" id="score">Score: 0</div>
+
+        <!-- Timer -->
+        <div class="timer" id="time">Time: <span>30</span>s</div>
+
+        <!-- Game Over Message -->
+        <div class="game-over" id="gameOver">Game Over</div>
+
+        <!-- Reset Button -->
+        <button class="reset-button" id="resetButton" onclick="resetGame()">Start Game</button>
+    </div>
+
+    <script>
+        // Game Variables
+        let score = 0;
+        let timeLeft = 30;
+        let targetSize = 80;
+        let gameStarted = false;
+        let gameInterval;
+        let timerInterval;
+        let targets = [];
+        const scoreDisplay = document.getElementById('score');
+        const gameOverMessage = document.getElementById('gameOver');
+        const resetButton = document.getElementById('resetButton');
+        const timeDisplay = document.getElementById('time').children[0];
+
+        // Function to start the game
+        function startGame() {
+            if (gameStarted) return;
+            gameStarted = true;
+            score = 0;
+            timeLeft = 30;
+            targets = [];
+            scoreDisplay.textContent = `Score: ${score}`;
+            timeDisplay.textContent = `${timeLeft}s`;
+
+            // Hide Game Over Message
+            gameOverMessage.style.visibility = 'hidden';
+
+            // Start Timer
+            timerInterval = setInterval(updateTimer, 1000);
+
+            // Start spawning targets
+            spawnTarget();
+            gameInterval = setInterval(spawnTarget, 500); // New target every 0.5 second
+        }
+
+        // Function to update the countdown timer
+        function updateTimer() {
+            timeLeft--;
+            timeDisplay.textContent = `${timeLeft}s`;
+
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        // Function to create new targets (balls)
+        function spawnTarget() {
+            const newTarget = document.createElement('div');
+            newTarget.classList.add('target');
+            newTarget.style.width = `${targetSize}px`;
+            newTarget.style.height = `${targetSize}px`;
+
+            // Set random position for the target
+            const maxX = window.innerWidth - targetSize;
+            const maxY = window.innerHeight - targetSize;
+            newTarget.style.left = `${Math.random() * maxX}px`;
+            newTarget.style.top = `${Math.random() * maxY}px`;
+
+            // Randomize speed for each target (faster movement)
+            const speed = Math.random() * (500 - 300) + 300; // 0.3 to 0.5 seconds
+
+            // Animate target movement
+            let targetMovement = setInterval(() => {
+                let newX = parseFloat(newTarget.style.left) + (Math.random() * 10 - 5);
+                let newY = parseFloat(newTarget.style.top) + (Math.random() * 10 - 5);
+
+                newTarget.style.left = `${Math.min(Math.max(0, newX), maxX)}px`;
+                newTarget.style.top = `${Math.min(Math.max(0, newY), maxY)}px`;
+            }, speed / 50);
+
+            // Click event for the target
+            newTarget.addEventListener('click', function () {
+                clearInterval(targetMovement); // Stop target movement when clicked
+                score++;
+                scoreDisplay.textContent = `Score: ${score}`;
+
+                // Remove target from screen
+                newTarget.remove();
+
+                // Increase difficulty
+                if (score % 10 === 0 && targetSize > 20) {
+                    targetSize -= 5; // Decrease target size
+                }
+
+                // Add more targets as score increases (spawn a new target every 5 points)
+                if (score % 5 === 0) {
+                    spawnTarget();
+                }
+            });
+
+            document.getElementById('gameContainer').appendChild(newTarget);
+            targets.push(newTarget);
+        }
+
+        // Function to end the game
+        function endGame() {
+            clearInterval(gameInterval);
+            clearInterval(timerInterval);
+            gameStarted = false;
+            gameOverMessage.style.visibility = 'visible';
+            gameOverMessage.textContent = `Game Over! Final Score: ${score}`;
+        }
+
+        // Function to reset the game
+        function resetGame() {
+            // Reset everything
+            document.getElementById('gameContainer').innerHTML = `
+                <div class="score-board" id="score">Score: 0</div>
+                <div class="timer" id="time">Time: <span>30</span>s</div>
+                <div class="game-over" id="gameOver">Game Over</div>
+                <button class="reset-button" id="resetButton" onclick="resetGame()">Start Game</button>
+            `;
+            startGame();
+        }
+
+        // Start the game when the page loads
+        window.onload = function () {
+            startGame();
+        };
+
+    </script>
+
+</body>
+</html>
